@@ -1,4 +1,4 @@
-# JSDicordBot
+# JSDiscordBot
 This bot is going to be a copy paste of my python one.
 Then i will add some more func.
 
