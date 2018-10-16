@@ -9,6 +9,15 @@ client.on('ready', () => {
 
 // Create an event listener for messages
 client.on('message', message => {
+	if (message.content.includes('!admin') === true) {
+		if (message.author.id.includes(process.env.ADMIN) === true) {
+				message.reply('ye')
+					.then(result => result.edit('Yes'))
+		}
+		else {
+			message.channel.send('Nay')
+		}
+	}
 	// If the message is "ping"
 	if (message.content === 'ping') {
 		// Send "pong" to the same channel
