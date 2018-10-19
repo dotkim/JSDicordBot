@@ -28,27 +28,33 @@ client.on('message', message => {
 						if (message.content == 'logs') {
 							request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
 								body = JSON.parse(body)
+								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
+								function getFights(url, callback) {
+									request(url, (error, response, body) => {
+										body = JSON.parse(body)
+										let bosses = []
+										let i;
+										for (i in body.fights) {
+											let curFight = body.fights[i]
+											if (curFight.kill != undefined && curFight.boss != 0) {
+												if (!bosses.includes(curFight.name))
+													bosses += curFight.name
+												/* console.log(curFight.name)
+												console.log(curFight.kill)
+												console.log(curFight.difficulty) */
+											}
+										}
+										callback(bosses)
+										console.log(bosses)
+									})
+								}
 								let embed = new Discord.RichEmbed()
 									.setTitle(format('**Logname: %s**', body[0].title))
 									.setAuthor(message.author.username, message.author.avatarURL)
 									.setColor('RANDOM')
 									.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
 									.setDescription(
-										request('https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY, (error, response, body) => {
-											body = JSON.parse(body)
-											let bosses = ""
-											let i;
-											for (i in body.fights) {
-												let curFight = body.fights[i]
-												if (curFight.kill != undefined && curFight.boss != 0) {
-													bosses += format('**Fight name:** %s', curFight.name)
-													/* console.log(curFight.name)
-													console.log(curFight.kill)
-													console.log(curFight.difficulty) */
-												}
-											return bosses
-											}
-										})
+										format('Bosses: %s', getFights(url, (callback) => {callback}))
 									);
 								result.edit({ embed });
 								message.delete();
