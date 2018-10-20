@@ -1,11 +1,12 @@
 {
-  "name": "jsdicordbot",
+  "name": "jsdiscordbot",
   "version": "1.0.0",
   "description": "Simple bot",
   "main": "bot.js",
   "dependencies": {
     "discord.js": "^11.4.2",
-    "dotenv": "^6.1.0"
+    "dotenv": "^6.1.0",
+    "request": "^2.88.0"
   },
   "devDependencies": {},
   "scripts": {
