@@ -33,19 +33,14 @@ client.on('message', message => {
 									request(url, (error, response, body) => {
 										body = JSON.parse(body)
 										let bosses = []
-										let i;
 										for (i in body.fights) {
 											let curFight = body.fights[i]
 											if (curFight.kill != undefined && curFight.boss != 0) {
 												if (!bosses.includes(curFight.name))
 													bosses += curFight.name
-												/* console.log(curFight.name)
-												console.log(curFight.kill)
-												console.log(curFight.difficulty) */
 											}
 										}
-										callback(bosses)
-										console.log(bosses)
+										return callback(bosses)
 									})
 								}
 								let embed = new Discord.RichEmbed()
@@ -54,8 +49,16 @@ client.on('message', message => {
 									.setColor('RANDOM')
 									.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
 									.setDescription(
-										format('Bosses: %s', getFights(url, (callback) => {callback}))
+										format('Bosses:\n%s', getFights(url, (callback) => { callback }))
 									);
+								infoChannel = client.channels.get(process.env.INFOCHANNEL)
+								templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
+								templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
+									.then(message => {
+										/* infoChannel.send(message.content + '\n', { embed })
+											.then() */
+									})
+									.catch(console.error);
 								result.edit({ embed });
 								message.delete();
 							});
