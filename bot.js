@@ -9,6 +9,23 @@ client.on('ready', () => {
 	console.log('I am ready!');
 });
 
+function getFights(url, callback) {
+	request(url, (error, response, body) => {
+		body = JSON.parse(body)
+		let bosses = ""
+		for (i in body.fights) {
+			let curFight = body.fights[i]
+			if (curFight.kill != undefined && curFight.boss != 0) {
+				if (!bosses.includes(curFight.name)) {
+					bosses = curFight.name
+				}
+			}
+		}
+		console.log(bosses)
+		return callback(bosses)
+	})
+}
+
 // Create an event listener for messages
 client.on('message', message => {
 	if (message.content.includes('!admin') === true) {
@@ -22,34 +39,20 @@ client.on('message', message => {
 							message.delete();
 							request('https://www.wowprogress.com/guild/eu/argent-dawn/Salvation/json_rank', function (error, response, body) {
 								body = JSON.parse(body)
-								result.edit(format('__**Guild Ranking**__\n**Score:** __%d__\n**World Rank:** __%d__\n**Realm rank:** __%d__', body.score, body.world_rank, body.realm_rank));
+								result.edit(format('__**Guild Ranking**__\n**Score:**\t\t\t\t__%d__\n**World Rank:**\t__%d__\n**Realm rank:**\t __%d__', body.score, body.world_rank, body.realm_rank));
 							});
 						}
 						if (message.content == 'logs') {
 							request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
 								body = JSON.parse(body)
 								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
-								function getFights(url, callback) {
-									request(url, (error, response, body) => {
-										body = JSON.parse(body)
-										let bosses = []
-										for (i in body.fights) {
-											let curFight = body.fights[i]
-											if (curFight.kill != undefined && curFight.boss != 0) {
-												if (!bosses.includes(curFight.name))
-													bosses += curFight.name
-											}
-										}
-										return callback(bosses)
-									})
-								}
 								let embed = new Discord.RichEmbed()
 									.setTitle(format('**Logname: %s**', body[0].title))
 									.setAuthor(message.author.username, message.author.avatarURL)
 									.setColor('RANDOM')
 									.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
 									.setDescription(
-										format('Bosses:\n%s', getFights(url, (callback) => { callback }))
+										format('Bosses:\n%s', getFights(url, (callback) => callback))
 									);
 								infoChannel = client.channels.get(process.env.INFOCHANNEL)
 								templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
@@ -64,7 +67,8 @@ client.on('message', message => {
 							});
 						}
 					})
-				});
+				})
+				.catch(console.error)
 		}
 		else {
 			message.channel.send('Nay')
