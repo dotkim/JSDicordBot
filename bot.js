@@ -12,17 +12,21 @@ client.on('ready', () => {
 function getFights(url, callback) {
 	request(url, (error, response, body) => {
 		body = JSON.parse(body)
-		let bosses = ""
+		let fights = []
 		for (i in body.fights) {
 			let curFight = body.fights[i]
 			if (curFight.kill != undefined && curFight.boss != 0) {
-				if (!bosses.includes(curFight.name)) {
-					bosses = curFight.name
+				if (curFight.kill === true) {
+					fights += curFight.name + ' - Kill\n'
+				}
+				else {
+					fights += curFight.name + ' - Wipe\n'
 				}
 			}
 		}
-		console.log(bosses)
-		return callback(bosses)
+
+		console.log(fights)
+		return callback(fights)
 	})
 }
 
@@ -30,7 +34,7 @@ function getFights(url, callback) {
 client.on('message', message => {
 	if (message.content.includes('!admin') === true) {
 		if (message.author.id.includes(process.env.ADMIN) === true) {
-			message.delete();
+			message.delete(); // Delete !admin request, 
 			const collector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id, { time: 20000 });
 			message.reply('Waiting for command')
 				.then(result => {
@@ -39,7 +43,12 @@ client.on('message', message => {
 							message.delete();
 							request('https://www.wowprogress.com/guild/eu/argent-dawn/Salvation/json_rank', function (error, response, body) {
 								body = JSON.parse(body)
-								result.edit(format('__**Guild Ranking**__\n**Score:**\t\t\t\t__%d__\n**World Rank:**\t__%d__\n**Realm rank:**\t __%d__', body.score, body.world_rank, body.realm_rank));
+								result.edit(
+									format('__**Guild Ranking**__\n**Score:**\t\t\t\t__%d__\n**World Rank:**\t__%d__\n**Realm rank:**\t __%d__',
+										body.score,
+										body.world_rank,
+										body.realm_rank)
+								);
 							});
 						}
 						if (message.content == 'logs') {
@@ -47,23 +56,26 @@ client.on('message', message => {
 								body = JSON.parse(body)
 								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
 								let embed = new Discord.RichEmbed()
-									.setTitle(format('**Logname: %s**', body[0].title))
-									.setAuthor(message.author.username, message.author.avatarURL)
-									.setColor('RANDOM')
-									.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
-									.setDescription(
-										format('Bosses:\n%s', getFights(url, (callback) => callback))
-									);
-								infoChannel = client.channels.get(process.env.INFOCHANNEL)
-								templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
-								templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
-									.then(message => {
-										/* infoChannel.send(message.content + '\n', { embed })
-											.then() */
-									})
-									.catch(console.error);
-								result.edit({ embed });
-								message.delete();
+								getFights(url, (fights) => {
+									embed
+										.setTitle(format('**Logname: %s**', body[0].title))
+										.setAuthor(message.author.username, message.author.avatarURL)
+										.setColor('RANDOM')
+										.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
+										.setDescription(
+											format('Fights:\n%s', fights)
+										);
+									infoChannel = client.channels.get(process.env.INFOCHANNEL)
+									templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
+									templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
+										.then(message => {
+											infoChannel.send(message.content + '\n', { embed })
+												.then(/* store message ID for future edit of the sent message, this is to make the post as clean as possible. */)
+										})
+										.catch(console.error);
+									message.delete();
+									result.edit('Logs updated');
+								})
 							});
 						}
 					})
