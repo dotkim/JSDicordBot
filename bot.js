@@ -9,6 +9,7 @@ client.on('ready', () => {
 	console.log('I am ready!');
 });
 
+
 function getFights(raidId) {
 	return new Promise((resolve, reject) => {
 		url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + raidId + '?translate=false&api_key=' + process.env.APIKEY
@@ -23,11 +24,10 @@ function getFights(raidId) {
 							fights += curFight.name + ' - Kill\n'
 						}
 						else {
+              if (!fights.includes(curFight.name)) {
 							fights += curFight.name + ' - Wipe\n'
+              }
 						}
-					}
-				}
-				console.log(fights)
 				resolve(fights)
 			} else {
 				reject(error)
@@ -89,7 +89,7 @@ client.on('message', message => {
 										})
 										.catch(console.error);
 									message.delete();
-									result.edit('Logs updated');
+									result.edit('Logs updated').then(msg => {msg.delete(10000)}).catch(console.error);
 								})
 								.catch(console.error)
 							})
