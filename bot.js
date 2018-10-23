@@ -15,60 +15,41 @@ function getFights(raidId) {
 		url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + raidId + '?translate=false&api_key=' + process.env.APIKEY
 		request(url, (error, response, body) => {
 			if (!error) {
-				body = JSON.parse(body)
+				data = JSON.parse(body)
 				let bosses = {}
-				let fights = []
-				for (i in body.fights) {
-					let curFight = body.fights[i]
-					if (curFight.kill != undefined && curFight.boss != 0) {
-						let bKill = 0
-						let bWipe = 0
-
-						// This function might be move to a object as seen below.
-						//the second for loop can be removed and the returned values can be moved outside of the first for loop
-						/* if (!bosses[curFight.boss]) {
-							bosses[curFight.boss] = {
-								name: curFight.name,
+				data.fights.forEach(encounter => {
+					if (encounter.boss != 0) {
+						if (!bosses[encounter.boss]) {
+							bosses[encounter.boss] = {
+								name: encounter.name,
 								wipes: 0,
-								kills: 0
+								kills: 0,
+								fightPercentage: 10000
 							};
 						}
-						if(curFight.kill === true){
-							bosses[curFight.boss].kills++;
+						if (encounter.kill === true) {
+							bosses[encounter.boss].kills++;
 						}
 						else {
-							bosses[curFight.boss].wipes++;	
-						} */
-
-						for (f in body.fights) {
-							let encounterCheck = body.fights[f]
-							if (encounterCheck.boss == curFight.boss) {
-								if (encounterCheck.kill === true) {
-									bKill += 1
-								}
-								else {
-									bWipe += 1
-								}
-							}
-						}
-						if ((curFight.kill === true) && (!fights.includes(curFight.name))) {
-							if (bKill > 1) {
-								fights += curFight.name + ' - Kill(' + bKill + ')\n'
-							}
-							else {
-								fights += curFight.name + ' - Kill\n'
-							}
-						}
-						else if ((curFight.kill !== true) && (!fights.includes(curFight.name))) {
-							if (bWipe > 1) {
-								fights += curFight.name + ' - Wipe(' + bWipe + ')\n'
-							}
-							else {
-								fights += curFight.name + ' - Wipe\n'
+							bosses[encounter.boss].wipes++;
+							if (encounter.fightPercentage < bosses[encounter.boss].fightPercentage) {
+								bosses[encounter.boss].fightPercentage = encounter.fightPercentage
 							}
 						}
 					}
-				}
+				});
+				fights = []
+				Object.keys(bosses).forEach(key => {
+					if (bosses[key].wipes >= 1) {
+						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage/100, 1) + '%\n'
+					}
+					else if (bosses[key].kills > 1) {
+						fights += bosses[key].name + 'Kills: ' + bosses[key].kills + '\n'
+					}
+					else {
+						fights += bosses[key].name + ' - Kill\n'
+					}
+				})
 				resolve(fights)
 			}
 			else {
