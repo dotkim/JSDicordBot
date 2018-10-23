@@ -67,6 +67,9 @@ let getLastRaid = new Promise((resolve, reject) => {
 	})
 })
 
+//Global var for testing.
+//This is waiting for a DB implementation.
+let logMessageID = "504405057668644876"
 
 // Create an event listener for messages
 client.on('message', message => {
@@ -104,8 +107,18 @@ client.on('message', message => {
 									templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
 									templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
 										.then(message => {
-											infoChannel.send(message.content + '\n', { embed })
-												.then( /* store message ID for future edit of the sent message, this is to make the post as clean as possible. */)
+											if (!logMessageID) {
+												infoChannel.send(message.content + '\n', { embed })
+												.then(msg => {
+													//Save msg ID somewhere.
+												})
+											}
+											else {
+												infoChannel.fetchMessage(logMessageID)
+												.then(infoMsg => {
+													infoMsg.edit(message.content + '\n', { embed })
+												})
+											}
 										})
 										.catch(console.error);
 									message.delete();
