@@ -20,7 +20,9 @@ function getFights(url, callback) {
 					fights += curFight.name + ' - Kill\n'
 				}
 				else {
-					fights += curFight.name + ' - Wipe\n'
+					if (!fights.includes(curFight.name)) {
+						fights += curFight.name + ' - Wipe\n'
+					}
 				}
 			}
 		}
@@ -52,31 +54,33 @@ client.on('message', message => {
 							});
 						}
 						if (message.content == 'logs') {
-							request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
-								body = JSON.parse(body)
-								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
-								let embed = new Discord.RichEmbed()
-								getFights(url, (fights) => {
-									embed
-										.setTitle(format('**Logname: %s**', body[0].title))
-										.setAuthor(message.author.username, message.author.avatarURL)
-										.setColor('RANDOM')
-										.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
-										.setDescription(
-											format('Fights:\n%s', fights)
-										);
-									infoChannel = client.channels.get(process.env.INFOCHANNEL)
-									templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
-									templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
-										.then(message => {
-											infoChannel.send(message.content + '\n', { embed })
-												.then(/* store message ID for future edit of the sent message, this is to make the post as clean as possible. */)
-										})
-										.catch(console.error);
-									message.delete();
-									result.edit('Logs updated');
-								})
-							});
+							request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY,
+								(error, response, body) => {
+									body = JSON.parse(body)
+									url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
+									let embed = new Discord.RichEmbed()
+									getFights(url, (fights) => {
+										embed
+											.setTitle(format('**Logname: %s**', body[0].title))
+											.setAuthor('Author: ' + body[0].owner)
+											.setColor('RANDOM')
+											.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
+											.setDescription(
+												format('Fights:\n%s', fights)
+											);
+										infoChannel = client.channels.get(process.env.INFOCHANNEL)
+										templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
+										templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
+											.then(message => {
+												infoChannel.send(message.content + '\n', { embed })
+													.then(/* store message ID for future edit of the sent message, this is to make the post as clean as possible. */)
+													.catch(console.error)
+											})
+											.catch(console.error);
+										message.delete();
+										result.edit('Logs updated').then(msg => {msg.delete(10000)}).catch(console.error);
+									})
+								});
 						}
 					})
 				})
