@@ -24,12 +24,16 @@ function getFights(raidId) {
 							fights += curFight.name + ' - Kill\n'
 						}
 						else {
-              if (!fights.includes(curFight.name)) {
-							fights += curFight.name + ' - Wipe\n'
-              }
+							if (!fights.includes(curFight.name)) {
+								fights += curFight.name + ' - Wipe\n'
+							}
 						}
-				resolve(fights)
-			} else {
+						resolve(fights)
+					}
+
+				}
+			}
+			else {
 				reject(error)
 			}
 		})
@@ -89,11 +93,11 @@ client.on('message', message => {
 										})
 										.catch(console.error);
 									message.delete();
-									result.edit('Logs updated').then(msg => {msg.delete(10000)}).catch(console.error);
+									result.edit('Logs updated').then(msg => { msg.delete(10000) }).catch(console.error);
 								})
-								.catch(console.error)
+									.catch(console.error)
 							})
-							.catch(console.error)
+								.catch(console.error)
 						}
 					})
 				})
