@@ -9,8 +9,9 @@ client.on('ready', () => {
 	console.log('I am ready!');
 });
 
-function getFights(url) {
+function getFights(raidId) {
 	return new Promise((resolve, reject) => {
+		url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + raidId + '?translate=false&api_key=' + process.env.APIKEY
 		request(url, (error, response, body) => {
 			if (!error) {
 				body = JSON.parse(body)
@@ -38,7 +39,8 @@ function getFights(url) {
 let getLastRaid = new Promise((resolve, reject) => {
 	request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
 		if (!error) {
-			resolve(JSON.parse(body))
+			let raidData = JSON.parse(body)
+			resolve(raidData[0])
 		} else {
 			reject(error)
 		}
@@ -69,13 +71,12 @@ client.on('message', message => {
 						}
 						if (message.content == 'logs') {
 							getLastRaid.then(raidData => {
-								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + raidData[0].id + '?translate=false&api_key=' + process.env.APIKEY
-								getFights(url).then(fights => {
+								getFights(raidData.id).then(fights => {
 									let embed = new Discord.RichEmbed()
-										.setTitle(format('**Logname: %s**', raidData[0].title))
+										.setTitle(format('**Logname: %s**', raidData.title))
 										.setAuthor(message.author.username, message.author.avatarURL)
 										.setColor('RANDOM')
-										.setURL('https://www.warcraftlogs.com/reports/' + raidData[0].id)
+										.setURL('https://www.warcraftlogs.com/reports/' + raidData.id)
 										.setDescription(
 											format('Fights:\n%s', fights)
 										);
