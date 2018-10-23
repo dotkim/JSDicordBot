@@ -16,22 +16,60 @@ function getFights(raidId) {
 		request(url, (error, response, body) => {
 			if (!error) {
 				body = JSON.parse(body)
+				let bosses = {}
 				let fights = []
 				for (i in body.fights) {
 					let curFight = body.fights[i]
 					if (curFight.kill != undefined && curFight.boss != 0) {
-						if (curFight.kill === true) {
-							fights += curFight.name + ' - Kill\n'
+						let bKill = 0
+						let bWipe = 0
+
+						// This function might be move to a object as seen below.
+						//the second for loop can be removed and the returned values can be moved outside of the first for loop
+						/* if (!bosses[curFight.boss]) {
+							bosses[curFight.boss] = {
+								name: curFight.name,
+								wipes: 0,
+								kills: 0
+							};
+						}
+						if(curFight.kill === true){
+							bosses[curFight.boss].kills++;
 						}
 						else {
-							if (!fights.includes(curFight.name)) {
+							bosses[curFight.boss].wipes++;	
+						} */
+
+						for (f in body.fights) {
+							let encounterCheck = body.fights[f]
+							if (encounterCheck.boss == curFight.boss) {
+								if (encounterCheck.kill === true) {
+									bKill += 1
+								}
+								else {
+									bWipe += 1
+								}
+							}
+						}
+						if ((curFight.kill === true) && (!fights.includes(curFight.name))) {
+							if (bKill > 1) {
+								fights += curFight.name + ' - Kill(' + bKill + ')\n'
+							}
+							else {
+								fights += curFight.name + ' - Kill\n'
+							}
+						}
+						else if ((curFight.kill !== true) && (!fights.includes(curFight.name))) {
+							if (bWipe > 1) {
+								fights += curFight.name + ' - Wipe(' + bWipe + ')\n'
+							}
+							else {
 								fights += curFight.name + ' - Wipe\n'
 							}
 						}
-						resolve(fights)
 					}
-
 				}
+				resolve(fights)
 			}
 			else {
 				reject(error)
