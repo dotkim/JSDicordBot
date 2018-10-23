@@ -9,12 +9,74 @@ client.on('ready', () => {
 	console.log('I am ready!');
 });
 
+
+function getFights(raidId) {
+	return new Promise((resolve, reject) => {
+		url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + raidId + '?translate=false&api_key=' + process.env.APIKEY
+		request(url, (error, response, body) => {
+			if (!error) {
+				data = JSON.parse(body)
+				let bosses = {}
+				data.fights.forEach(encounter => {
+					if (encounter.boss != 0) {
+						if (!bosses[encounter.boss]) {
+							bosses[encounter.boss] = {
+								name: encounter.name,
+								wipes: 0,
+								kills: 0,
+								fightPercentage: 10000
+							};
+						}
+						if (encounter.kill === true) {
+							bosses[encounter.boss].kills++;
+						}
+						else {
+							bosses[encounter.boss].wipes++;
+							if (encounter.fightPercentage < bosses[encounter.boss].fightPercentage) {
+								bosses[encounter.boss].fightPercentage = encounter.fightPercentage
+							}
+						}
+					}
+				});
+				fights = []
+				Object.keys(bosses).forEach(key => {
+					if (bosses[key].kills >= 1) {
+						fights += bosses[key].name + ' - Kills: ' + bosses[key].kills + '\n'
+					}
+					else {
+						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage/100, 1) + '%\n'
+					}
+				})
+				resolve(fights)
+			}
+			else {
+				reject(error)
+			}
+		})
+	})
+}
+
+let getLastRaid = new Promise((resolve, reject) => {
+	request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
+		if (!error) {
+			let raidData = JSON.parse(body)
+			resolve(raidData[0])
+		} else {
+			reject(error)
+		}
+	})
+})
+
+//Global var for testing.
+//This is waiting for a DB implementation.
+let logMessageID = "504405057668644876"
+
 // Create an event listener for messages
 client.on('message', message => {
 	if (message.content.includes('!admin') === true) {
 		if (message.author.id.includes(process.env.ADMIN) === true) {
-			message.delete();
-			const collector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id, { time: 20000 });
+			message.delete(); // Delete !admin request, 
+			const collector = new Discord.MessageCollector(message.channel, m => m.author.id === message.author.id, { time: 20000, maxMatches: 2 });
 			message.reply('Waiting for command')
 				.then(result => {
 					collector.on('collect', message => {
@@ -22,46 +84,53 @@ client.on('message', message => {
 							message.delete();
 							request('https://www.wowprogress.com/guild/eu/argent-dawn/Salvation/json_rank', function (error, response, body) {
 								body = JSON.parse(body)
-								result.edit(format('__**Guild Ranking**__\n**Score:** __%d__\n**World Rank:** __%d__\n**Realm rank:** __%d__', body.score, body.world_rank, body.realm_rank));
+								result.edit(
+									format('__**Guild Ranking**__\n**Score:**\t\t\t\t__%d__\n**World Rank:**\t__%d__\n**Realm rank:**\t __%d__',
+										body.score,
+										body.world_rank,
+										body.realm_rank)
+								);
 							});
 						}
 						if (message.content == 'logs') {
-							request('https://www.warcraftlogs.com:443/v1/reports/guild/Salvation/Argent-Dawn/EU?start=1538156088557&api_key=' + process.env.APIKEY, (error, response, body) => {
-								body = JSON.parse(body)
-								url = 'https://www.warcraftlogs.com:443/v1/report/fights/' + body[0].id + '?translate=false&api_key=' + process.env.APIKEY
-								function getFights(url, callback) {
-									request(url, (error, response, body) => {
-										body = JSON.parse(body)
-										let bosses = []
-										let i;
-										for (i in body.fights) {
-											let curFight = body.fights[i]
-											if (curFight.kill != undefined && curFight.boss != 0) {
-												if (!bosses.includes(curFight.name))
-													bosses += curFight.name
-												/* console.log(curFight.name)
-												console.log(curFight.kill)
-												console.log(curFight.difficulty) */
+							getLastRaid.then(raidData => {
+								getFights(raidData.id).then(fights => {
+									let embed = new Discord.RichEmbed()
+										.setTitle(format('**Logname: %s**', raidData.title))
+										.setAuthor(message.author.username, message.author.avatarURL)
+										.setColor('RANDOM')
+										.setURL('https://www.warcraftlogs.com/reports/' + raidData.id)
+										.setDescription(
+											format('Fights:\n%s', fights)
+										);
+									infoChannel = client.channels.get(process.env.INFOCHANNEL)
+									templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
+									templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
+										.then(message => {
+											if (!logMessageID) {
+												infoChannel.send(message.content + '\n', { embed })
+												.then(msg => {
+													//Save msg ID somewhere.
+												})
 											}
-										}
-										callback(bosses)
-										console.log(bosses)
-									})
-								}
-								let embed = new Discord.RichEmbed()
-									.setTitle(format('**Logname: %s**', body[0].title))
-									.setAuthor(message.author.username, message.author.avatarURL)
-									.setColor('RANDOM')
-									.setURL('https://www.warcraftlogs.com/reports/' + body[0].id)
-									.setDescription(
-										format('Bosses: %s', getFights(url, (callback) => {callback}))
-									);
-								result.edit({ embed });
-								message.delete();
-							});
+											else {
+												infoChannel.fetchMessage(logMessageID)
+												.then(infoMsg => {
+													infoMsg.edit(message.content + '\n', { embed })
+												})
+											}
+										})
+										.catch(console.error);
+									message.delete();
+									result.edit('Logs updated').then(msg => { msg.delete(10000) }).catch(console.error);
+								})
+									.catch(console.error)
+							})
+								.catch(console.error)
 						}
 					})
-				});
+				})
+				.catch(console.error)
 		}
 		else {
 			message.channel.send('Nay')
