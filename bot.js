@@ -40,14 +40,11 @@ function getFights(raidId) {
 				});
 				fights = []
 				Object.keys(bosses).forEach(key => {
-					if (bosses[key].wipes >= 1) {
-						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage/100, 1) + '%\n'
-					}
-					else if (bosses[key].kills > 1) {
-						fights += bosses[key].name + 'Kills: ' + bosses[key].kills + '\n'
+					if (bosses[key].kills >= 1) {
+						fights += bosses[key].name + ' - Kills: ' + bosses[key].kills + '\n'
 					}
 					else {
-						fights += bosses[key].name + ' - Kill\n'
+						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage/100, 1) + '%\n'
 					}
 				})
 				resolve(fights)
