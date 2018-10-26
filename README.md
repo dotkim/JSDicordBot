@@ -1,5 +1,2 @@
 # JSDiscordBot
-This bot is going to be a copy paste of my python one.
-Then i will add some more func.
-
-Python bot will not be shared as it is not cleaned up e.g. token and stuff.
+Creating a bot for my guild, this was mostly meant for something else, but interrested in where this is going :)
