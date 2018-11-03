@@ -2,11 +2,30 @@ const Discord = require('discord.js');
 const dotenv = require('dotenv').config();
 const request = require('request');
 const format = require('util').format;
+const sql = require('./db');
 
 const client = new Discord.Client();
 
+//Global vars
+let templateChannel, infoChannel, logMessageID
+
 client.on('ready', () => {
 	console.log('I am ready!');
+	sql.getTemplateChannel()
+		.then(chnl => {
+			templateChannel = client.channels.get(chnl)
+		})
+		.catch(console.error);
+	sql.getInfoChannel()
+		.then(chnl => {
+			infoChannel = client.channels.get(chnl)
+			sql.getMessage(chnl, 'logmessage')
+				.then(msg => {
+					logMessageID = msg
+				})
+				.catch(console.error);
+		})
+		.catch(console.error);
 });
 
 
@@ -44,7 +63,7 @@ function getFights(raidId) {
 						fights += bosses[key].name + ' - Kills: ' + bosses[key].kills + '\n'
 					}
 					else {
-						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage/100, 1) + '%\n'
+						fights += bosses[key].name + ' - Wipes: ' + bosses[key].wipes + ' Best: ' + Math.round(bosses[key].fightPercentage / 100, 1) + '%\n'
 					}
 				})
 				resolve(fights)
@@ -66,10 +85,6 @@ let getLastRaid = new Promise((resolve, reject) => {
 		}
 	})
 })
-
-//Global var for testing.
-//This is waiting for a DB implementation.
-let logMessageID = "504405057668644876"
 
 // Create an event listener for messages
 client.on('message', message => {
@@ -103,26 +118,36 @@ client.on('message', message => {
 										.setDescription(
 											format('Fights:\n%s', fights)
 										);
-									infoChannel = client.channels.get(process.env.INFOCHANNEL)
-									templateChannel = client.channels.get(process.env.TEMPLATECHANNEL)
 									templateChannel.fetchMessage(process.env.PROGRESSMESSAGEID)
 										.then(message => {
 											if (!logMessageID) {
 												infoChannel.send(message.content + '\n', { embed })
-												.then(msg => {
-													//Save msg ID somewhere.
-												})
+													.then(msg => {
+														sql.setMessage(msg.id, 'logmessage', infoChannel.id)
+														sql.getMessage(infoChannel.id, 'logmessage')
+															.then(msg => {
+																logMessageID = msg
+															})
+															.catch(console.error);
+													})
+													.catch(console.error);
 											}
 											else {
 												infoChannel.fetchMessage(logMessageID)
-												.then(infoMsg => {
-													infoMsg.edit(message.content + '\n', { embed })
-												})
+													.then(infoMsg => {
+														infoMsg.edit(message.content + '\n', { embed })
+													})
+													.catch(console.error);
 											}
 										})
 										.catch(console.error);
 									message.delete();
-									result.edit('Logs updated').then(msg => { msg.delete(10000) }).catch(console.error);
+									result
+										.edit('Logs updated')
+										.then(msg => {
+											msg.delete(10000)
+										})
+										.catch(console.error);
 								})
 									.catch(console.error)
 							})
