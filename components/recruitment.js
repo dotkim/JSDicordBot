@@ -1,6 +1,6 @@
 const classes = require('../data/classes.js');
 
-function recruit(content) {
+function recruit(content, recMsg) {
   return new Promise((resolve, reject) => {
     let regex = new RegExp(/^recruit\s(\w+)\s(\w+)\s(\w+)/, 'g');
     let commands = regex.exec(content.toLowerCase());
@@ -36,7 +36,16 @@ function recruit(content) {
       }
     }
     else if (commands[1] == 'rem') {
+      let msgArr = recMsg.content.split(/[\r\n]+/);
+      let filter = msgArr.filter((line) => !line.includes(commands[2]) && !line.includes(commands[3]));
+      let cmdFilter = msgArr.filter((line) => line.includes(commands[2]) && line.includes(commands[3]))
+      if (cmdFilter.length == 1) {
 
+        resolve('Removed: ' + cmdFilter.toString());
+      }
+      else {
+      }
+      console.log(msgArr);
     }
   });
 }

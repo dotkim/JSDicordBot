@@ -82,7 +82,7 @@ client.on('message', async (message) => {
 				if (message.content.includes('recruit')) {
 					if (!recMsg) recMsg = await tChnl.fetchMessage('503280236427739146');
 					message.delete();
-					let data = await recruit(message.content, reply);
+					let data = await recruit(message.content, recMsg);
 					if (typeof(data) == 'object' && data.length == 3) {
 						let c = await client.channels.get('504248210022334474');
 						let m = await c.fetchMessage('546833163314528256');
@@ -96,7 +96,6 @@ client.on('message', async (message) => {
 						reply.delete(20000);
 					}
 				}
-
 			});
 		}
 		catch (err) {
