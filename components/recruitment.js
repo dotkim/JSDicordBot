@@ -40,7 +40,6 @@ function recruit(content, recMsg) {
       let filter = msgArr.filter((line) => !line.includes(commands[2]) && !line.includes(commands[3]));
       let cmdFilter = msgArr.filter((line) => line.includes(commands[2]) && line.includes(commands[3]))
       if (cmdFilter.length == 1) {
-
         resolve('Removed: ' + cmdFilter.toString());
       }
       else {
