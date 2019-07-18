@@ -28,7 +28,7 @@ client.on('ready', async () => {
 			lastMsgChannel = client.channels.get(temp);
 			temp = undefined;
 		}
-		
+
 		temp = await redis.getKey('lastMsg');
 		if (temp === 'OK' && lastMsgChannel) {
 			lastMsg = lastMsgChannel.fetchMessage(temp);
@@ -79,13 +79,17 @@ client.on('message', async (message) => {
 						reply.edit('Working...');
 						let lastRaid = await logapi.getLastRaid();
 						let fights = await logapi.getFights(lastRaid.id);
-						let embed = new Discord.RichEmbed()
-							.setTitle(format('**%s**', lastRaid.title))
-							.setAuthor(command.member.displayName, command.author.avatarURL)
+						let embed = new Discord.RichEmbed()																	// create an embed to send in the message
+							.setTitle(format('**%s**', lastRaid.title))												// set the title to the title of the log
+							.setAuthor(command.member.displayName, command.author.avatarURL)	// this is the one who asked for the logs
 							.setColor('RANDOM')
-							.setURL('https://www.warcraftlogs.com/reports/' + lastRaid.id)
-							.setDescription(format('**Fights:**\n%s', fights));
+							.setURL('https://www.warcraftlogs.com/reports/' + lastRaid.id)		// give the link to the log for easy access.
+							.setDescription(format('**Fights:**\n%s', fights));								// append the list of encounters.
 
+						/*
+							this checks if the logmessage exists, that way we can delete the old one
+							then edit the reply with the new log message.
+						*/
 						let template = await tChnl.fetchMessage(process.env.TLMSG);
 						if (!lMsg) {
 							reply.edit(template.content + '\nAnalyzer link:\nhttps://wowanalyzer.com/report/' + lastRaid.id, { embed });
@@ -107,7 +111,7 @@ client.on('message', async (message) => {
 				if (command.content.includes('recruit')) {
 					if (!recMsg) recMsg = await tChnl.fetchMessage('503280236427739146');						// get the recruitment template message.
 					let data = await recruit(command.content, recMsg);															// get the new data from the recruitment class.
-					if (typeof(data) == 'object' && data.length == 3) {															// check if the returned data is an object (array) and the len is 3.
+					if (typeof (data) == 'object' && data.length == 3) {														// check if the returned data is an object (array) and the len is 3.
 						let c = await client.channels.get('504248210022334474');											// replace this to get the edited message (if one exists!).
 						let m = await c.fetchMessage('546833163314528256');														// this aswell...
 						m.edit(recMsg.content + '\n[' + data[2] + '] ' + data[1] + ' - ' + data[0]);	// edit the message, append the data to the content.
@@ -116,8 +120,8 @@ client.on('message', async (message) => {
 						reply.delete(20000);																													// delete the reply.
 					}
 					else {
-						reply.edit(data);
-						reply.delete(20000);
+						reply.edit(data);			// this part of the code runs when there are not any addition to the reply
+						reply.delete(20000);	// only the removal or the reply that nothing was done gets returned here.
 					}
 				}
 			});
